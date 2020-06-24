@@ -46,7 +46,9 @@ module GQLi
     private
 
     def validate_type(type)
+      type_name = schema["#{type_name}Type"]["name"]
       root_type = types.find { |t| t.name.casecmp(type).zero? }
+      fail 'Root type not found for #{type}' if root_type.nil?
       root.__nodes.each do |node|
         begin
           validate_node(root_type, node)
