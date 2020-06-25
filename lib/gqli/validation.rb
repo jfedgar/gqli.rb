@@ -3,7 +3,23 @@
 module GQLi
   # Validations
   class Validation
-    attr_reader :schema, :root, :errors
+    STRING_SCALAR_TYPES = %w[
+      String
+      ID
+      ISO8601DateTime
+      ISO8601Date
+    ].freeze
+
+    KNOWN_TYPES = STRING_SCALAR_TYPES + %w[
+      Int
+      Float
+      Boolean
+      Hash
+    ].freeze
+
+    KNOWN_KINDS = %w[INPUT_OBJECT ENUM].freeze
+
+    attr_reader :schema, :root, :errors, :type_name
 
     def initialize(schema, root)
       @schema = schema
@@ -133,13 +149,14 @@ module GQLi
     end
 
     def validate_value_for_type(arg_type, value, for_arg)
+      return true unless validate_arg_type?(arg_type)
       case value
       when EnumValue
         if arg_type.kind == 'ENUM' && !arg_type.enumValues.map(&:name).include?(value.to_s)
           fail "Invalid value for Enum '#{arg_type.name}' for '#{for_arg}'"
         end
       when ::String
-        unless arg_type.name == 'String' || arg_type.name == 'ID'
+        unless STRING_SCALAR_TYPES.include?(arg_type.name)
           value_type_error('String or ID', arg_type, for_arg)
         end
       when ::Integer
@@ -198,6 +215,15 @@ module GQLi
       else
         non_null
       end
+    end
+
+    def validate_arg_type?(arg_type)
+      return true if known_type?(arg_type)
+      schema.validate_unknown_types
+    end
+
+    def known_type?(arg_type)
+      KNOWN_KINDS.include?(arg_type.kind) || KNOWN_TYPES.include?(arg_type.name)
     end
   end
 end
