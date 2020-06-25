@@ -7,9 +7,10 @@ module GQLi
   class Response
     attr_reader :data, :query
 
-    def initialize(data, query)
+    def initialize(data, query, errors = [])
       @data = Hashie::Mash.new(data)
       @query = query
+      @errors = errors.map { |error| Hashie::Mash.new(error) }
     end
   end
 end
