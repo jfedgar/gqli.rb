@@ -25,6 +25,7 @@ module GQLi
       @schema = schema
       @root = root
       @errors = []
+      @type_name = root.class.name.split('::').last.downcase
 
       validate
     end
@@ -39,15 +40,14 @@ module GQLi
     def validate
       @errors = []
 
-      type_name = root.class.name.split('::').last
       validate_type(type_name)
     end
 
     private
 
     def validate_type(type)
-      type_name = schema["#{type_name}Type"]["name"]
-      root_type = types.find { |t| t.name.casecmp(type).zero? }
+      root_type_name = schema.send("#{type_name}_type").fetch('name')
+      root_type = types.find { |t| t.name.casecmp(root_type_name).zero? }
       fail 'Root type not found for #{type}' if root_type.nil?
       root.__nodes.each do |node|
         begin
@@ -212,8 +212,10 @@ module GQLi
 
     def non_null_type(non_null)
       case non_null.kind
+      when 'NON_NULL'
+        non_null_type(non_null.ofType)
       when 'LIST'
-        non_null.ofType
+        non_null_type(non_null.ofType)
       else
         non_null
       end
