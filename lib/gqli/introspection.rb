@@ -74,7 +74,7 @@ module GQLi
       }
     }
 
-    attr_reader :schema, :query_type, :mutation_type, :subscription_type, :types
+    attr_reader :schema, :query_type, :mutation_type, :subscription_type, :types, :validate_unknown_types
 
     def initialize(client)
       @schema = client.execute!(IntrospectionQuery).data.__schema
@@ -82,6 +82,7 @@ module GQLi
       @mutation_type = schema.mutationType
       @subscription_type = schema.subscriptionType
       @types = schema.types
+      @validate_unknown_types = (client.validate_unknown_types != false)
     end
 
     # Returns the evaluated validation for a query
