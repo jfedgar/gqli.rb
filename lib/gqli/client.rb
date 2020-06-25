@@ -9,14 +9,15 @@ require_relative './version'
 module GQLi
   # GraphQL HTTP Client
   class Client
-    attr_reader :url, :params, :headers, :validate_query, :schema
+    attr_reader :url, :params, :headers, :validate_query, :validate_unknown_types, :schema
 
-    def initialize(url, params: {}, headers: {}, validate_query: true)
+    def initialize(url, params: {}, headers: {}, validate_query: true, validate_unknown_types: true)
       @url = url
       @params = params
       @headers = headers
       @validate_query = validate_query
 
+      @validate_unknown_types = validate_unknown_types
       @schema = Introspection.new(self) if validate_query
     end
 
