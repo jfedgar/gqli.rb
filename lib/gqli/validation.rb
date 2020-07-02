@@ -3,12 +3,29 @@
 module GQLi
   # Validations
   class Validation
-    attr_reader :schema, :root, :errors
+    STRING_SCALAR_TYPES = %w[
+      String
+      ID
+      ISO8601DateTime
+      ISO8601Date
+    ].freeze
+
+    KNOWN_TYPES = STRING_SCALAR_TYPES + %w[
+      Int
+      Float
+      Boolean
+      Hash
+    ].freeze
+
+    KNOWN_KINDS = %w[INPUT_OBJECT ENUM].freeze
+
+    attr_reader :schema, :root, :errors, :type_name
 
     def initialize(schema, root)
       @schema = schema
       @root = root
       @errors = []
+      @type_name = root.class.name.split('::').last.downcase
 
       validate
     end
@@ -23,14 +40,15 @@ module GQLi
     def validate
       @errors = []
 
-      type_name = root.class.name.split('::').last
       validate_type(type_name)
     end
 
     private
 
     def validate_type(type)
-      root_type = types.find { |t| t.name.casecmp(type).zero? }
+      root_type_name = schema.send("#{type_name}_type").fetch('name')
+      root_type = types.find { |t| t.name.casecmp(root_type_name).zero? }
+      fail 'Root type not found for #{type}' if root_type.nil?
       root.__nodes.each do |node|
         begin
           validate_node(root_type, node)
@@ -133,13 +151,14 @@ module GQLi
     end
 
     def validate_value_for_type(arg_type, value, for_arg)
+      return true unless validate_arg_type?(arg_type)
       case value
       when EnumValue
         if arg_type.kind == 'ENUM' && !arg_type.enumValues.map(&:name).include?(value.to_s)
           fail "Invalid value for Enum '#{arg_type.name}' for '#{for_arg}'"
         end
       when ::String
-        unless arg_type.name == 'String' || arg_type.name == 'ID'
+        unless STRING_SCALAR_TYPES.include?(arg_type.name)
           value_type_error('String or ID', arg_type, for_arg)
         end
       when ::Integer
@@ -193,11 +212,22 @@ module GQLi
 
     def non_null_type(non_null)
       case non_null.kind
+      when 'NON_NULL'
+        non_null_type(non_null.ofType)
       when 'LIST'
-        non_null.ofType
+        non_null_type(non_null.ofType)
       else
         non_null
       end
+    end
+
+    def validate_arg_type?(arg_type)
+      return true if known_type?(arg_type)
+      schema.validate_unknown_types
+    end
+
+    def known_type?(arg_type)
+      KNOWN_KINDS.include?(arg_type.kind) || KNOWN_TYPES.include?(arg_type.name)
     end
   end
 end
