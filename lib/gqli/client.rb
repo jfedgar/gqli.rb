@@ -19,6 +19,7 @@ module GQLi
 
       @validate_unknown_types = validate_unknown_types
       @schema = Introspection.new(self) if validate_query
+      @validate_unknown_types = validate_unknown_types
     end
 
     # Executes a query
@@ -39,9 +40,11 @@ module GQLi
 
       fail "Error: #{http_response.reason}\nBody: #{http_response.body}" if http_response.status >= 300
 
-      data = JSON.parse(http_response.to_s)['data']
+      parsed_response = JSON.parse(http_response.to_s)
+      data = parsed_response['data']
+      errors = parsed_response.fetch('errors', [])
 
-      Response.new(data, query)
+      Response.new(data, query, errors)
     end
 
     # Validates a query against the schema

@@ -83,6 +83,7 @@ module GQLi
       @subscription_type = schema.subscriptionType
       @types = schema.types
       @validate_unknown_types = (client.validate_unknown_types != false)
+      @validate_unknown_types = client.validate_unknown_types || true
     end
 
     # Returns the evaluated validation for a query
