@@ -5,7 +5,7 @@ require 'hashie/mash'
 module GQLi
   # Response object wrapper
   class Response
-    attr_reader :data, :query
+    attr_reader :data, :query, :errors
 
     def initialize(data, query, errors = [])
       @data = Hashie::Mash.new(data)
