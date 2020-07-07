@@ -165,10 +165,16 @@ module GQLi
         value_type_error('Integer', arg_type, for_arg) unless arg_type.name == 'Int'
       when ::Float
         value_type_error('Float', arg_type, for_arg) unless arg_type.name == 'Float'
+      when ::BigDecimal
+        value_type_error('Float', arg_type, for_arg) unless arg_type.name == 'Float'
       when ::Hash
         validate_hash_value(arg_type, value, for_arg)
       when true, false
         value_type_error('Boolean', arg_type, for_arg) unless arg_type.name == 'Boolean'
+      when ::Array
+        value.each do |v|
+          validate_value_for_type(arg_type, v, for_arg)
+        end
       else
         value_type_error(value.class.name, arg_type, for_arg)
       end
@@ -200,7 +206,7 @@ module GQLi
              when 'NON_NULL'
                non_null_type(field_type.type.ofType)
              when 'LIST'
-               field_type.type.ofType
+               non_null_type(field_type.type.ofType)
              when 'OBJECT', 'INTERFACE', 'INPUT_OBJECT'
                field_type.type
              when 'SCALAR'
