@@ -40,10 +40,11 @@ module GQLi
 
       parsed_response = JSON.parse(http_response.to_s)
       data = parsed_response['data']
-      errors = parsed_response.fetch('errors')
+      errors = parsed_response.fetch('errors', nil)
       errors ||= data.fetch('errors', [])
+      data.each { |k,v| errors << v.fetch('errors', nil) if v.is_a?(Hash) }
 
-      Response.new(data, query, errors)
+      Response.new(data, query, errors.compact.flatten)
     end
 
     # Validates a query against the schema
